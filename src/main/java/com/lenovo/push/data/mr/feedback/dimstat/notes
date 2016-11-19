@@ -1,0 +1,40 @@
+Stage1 (Query MongoDB, get attribute info according to pid, construct unique key and remove duplicates)
+    Map
+    	Input: dbtbl\001logtime\001pid\001bizType\001eventName\001feedbackId\001success\001sid\001errCode\001packName\001currVer\001targetVer\001value
+    	Output: dimname<adid\001dimval\001thedate:eventname>pid -> 1
+    Reduce
+        Input: dimname<adid\001dimval\001thedate:eventname>pid  -> [1,...1]
+        Output: dimname<adid\001dimval\001thedate:eventname>pid -> NULL
+Stage2 (distinct count)
+    Map
+    	Input: dimname<adid\001dimval\001thedate:eventname>pid 
+    	Output: dimname<adid\001dimval\001thedate:eventname -> 1
+    Reduce
+        Input: dimname<adid\001dimval\001thedate:eventname -> [1,...1]
+        Output: dimname<adid\001dimval\001thedate:eventname -> sum
+Stage3 (Results aggregation and routing)
+	Map
+		Input:  dimname<adid\001dimval\001thedate:eventname\tsum
+		Output: dimname<adid\001dimval\001thedate -> eventname\tsum
+	Reduce
+	    Input: dimname<adid\001dimval\001thedate -> [eventname\tsum,...,eventname\tsum]
+	    Output: /dimname
+	               adid\001dimval\001thedate\001pushsum\001arrivesum\001displaysum\001clicksum\001downloadsum\001installsum\001activatesum\001downloadfailuresum\001installfailuresum
+	               
+	               
+正军&江浩
+          反馈数据多维度统计分析数据层开发工作已经完成，并在测试环境中完成部署，请根据存放统计结果的三张MySQL数据表完成后续开发工作。
+          
+          根据正军的需求，数据层采用如下设计方案。
+          1） 机型、地域和版本三个维度统计结果存放在三张MySQL数据库表中
+          2） 每个广告每个维度每天各统计项按pid进行去重统计
+          3） 每天定时调用MapReduce计算任务对昨天的三个维度进行统计，统计结果先分目录存放在HDFS中，然后使用sqoop分别导出到对应的数据库表中
+
+          测试环境部署说明
+          存放统计结果的MySQL数据库
+          主机： 172.17.17.100 root/lenovotest
+          数据库：db_lestat
+          表：feedback_devicemodel, feedback_cityname, feedback_peversion
+          
+
+ 
